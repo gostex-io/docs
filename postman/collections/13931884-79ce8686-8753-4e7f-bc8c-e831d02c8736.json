@@ -1496,7 +1496,8 @@
 					]
 				}
 			],
-			"id": "13931884-f29f5470-7895-4e4d-a982-149ee0d48685"
+			"id": "13931884-f29f5470-7895-4e4d-a982-149ee0d48685",
+			"description": "Privat method api"
 		},
 		{
 			"name": "Public",
