@@ -1,0 +1,2311 @@
+{
+	"info": {
+		"_postman_id": "13931884-79ce8686-8753-4e7f-bc8c-e831d02c8736",
+		"name": "Main API Collection",
+		"description": "## Authentication\n\nAll API requests require authentication using a Bearer token in the `Authorization` header.\n\n**Headers:**\n\n- `Authorization: Bearer`\n    \n- `Content-Type: application/json`\n    \n- `Signature:`\n    \n\n## Signature Verification\n\nAll requests and responses should be signed using HMAC-SHA256 with your secret key. This ensures the integrity and authenticity of the data exchanged between your system and the API.\n\n### Generating a Signature\n\nTo generate a signature, create an HMAC-SHA256 hash of the request body using your secret key.\n\nThere is a simple piece of PHP code that shows how to generate a signature:\n\n``` php\n/** @var \\Psr\\Http\\Message\\RequestInterface $request */\n$signature = hash_hmac(\n  'sha256',\n  $request->getBody()->getContents(),\n  $secretKey\n);\n$request->withHeader('Signature', $signature);\n\n ```\n\nOr JavaScript/Node.js:\n\n``` javascript\nconst hmac = require('crypto-js/hmac-sha256');\nconst body = {\n    orderId: '123',\n    // ...\n};\nconst signature = hmac(JSON.stringify(body), 'secretKey')\n  .toString();\n// 0a059c58184f388c6fe56bc07bf0b71f941ad85175283b5257fc9490422d9f6e\n\n ```\n\nOr Python:\n\n``` python\nimport hashlib\nimport hmac\nimport json\ndef sign(data: str, secret_key: str):\n    secret_key = bytes(secret_key, \"utf8\")\n    return hmac.new(secret_key, data.encode(), hashlib.sha256).hexdigest()\ndata = {\n    'orderId': '123',\n    # ...\n}\npayload = json.dumps(data, separators=(\",\", \":\"))\nsignature = sign(payload, 'secretKey')\nprint(signature)\n# 0ff2fa58c4811407c4cd5fcb5adef76bf32c4213a579da5b17ebffb61525cb11\n\n ```\n\n## Signature Verification for Responses\n\nAlso, each response and callback contains `Signature` header signed with your secret key. It is important to verify response/callback signature in order to prevent possible security vulnerabilities.\n\nAll responses from the API include a `Signature` header, which should be verified using your secret key to ensure the response has not been tampered with.\n\n**Example in JavaScript:**\n\n``` javascript\nconst crypto = require('crypto');\nconst responseBody = JSON.stringify(response.data);\nconst signature = response.headers['Signature'];\nconst expectedSignature = crypto.createHmac('sha256', secretKey).update(responseBody).digest('hex');\nif (signature === expectedSignature) {\n  // Signature is valid\n} else {\n  // Signature is invalid\n}\n\n ```\n\n---\n\n**Example in PHP:**\n\n``` php\n/** @var \\Psr\\Http\\Message\\ResponseInterface $response */\nif($response->getHeaderLine('Signature') === hash_hmac('sha256', $response->getBody()->getContents(), $secretKey))\n{\n  // You can trust\n}\n\n ```\n\n---\n\n### Error Codes\n\nBelow is a summary of error codes that can be returned by the API:\n\n| HTTP Status | Code | Message | Details |\n| --- | --- | --- | --- |\n| 400 | 400 | Invalid amount | The amount should be between and . |\n| 400 | 40001 | Invalid orderId | The provided orderId is either malformed or already exists. |\n| 400 | 40002 | All requisites are busy | Unable to create an invoice; all requisites are currently busy. |\n| 400 | 40003 | Invalid payment method | The specified payment method is not associated with the merchant. |\n| 400 | 40004 | Insufficient funds | The merchant does not have sufficient funds to process this payout. |\n| 404 | 40401 | Merchant not found | The specified merchantId does not exist or is invalid. |\n| 404 | 40402 | Payment method not found | The specified payment method does not exist. |\n| 404 | 40403 | No payment methods found | The merchant does not have any associated payment methods. |\n| 409 | 40901 | Duplicate payment | Payment with this orderId already exists and has been processed. |\n| 500 | 50001 | An error occurred | Internal server error. |\n\n---\n\n## Callbacks\n\nWhen a payment's status changes, the system can send a callback to the `callbackUri` provided during payment creation. The callback will include a signed payload similar to the response from the \"[Get Payment Status](#9a8a7412-0b96-46bf-92c7-9a727ae89025)\" endpoint. Header have sigh\n\n**Possible state Values:**\n\n- `created` - payment created without an invoice (no method selected, user is redirected to choose a method)\n    \n- `pending`\\- **payment successfully created with the chosen method!**\n    \n- `dispute`\\- dispute/appeal\n    \n- `in_check`\\- payment verification initiated by the user or an active payout in progress.\n    \n- `finished`\\- payment successfully completed (final status).\n    \n- `canceled`\\- canceled by the user or the gateway (final status for payouts).\n    \n- `expired`\\- payment expired.\n    \n- `failed`\\- payment creation failed; no suitable requisite found (final status)\n    \n\n---\n\n---\n\n## Notes\n\n- **Error Handling:** Always check for `status: false` in the response to handle errors gracefully.\n    \n- **Rate Limiting:** Excessive requests may result in rate limiting. Ensure your application handles HTTP 429 responses.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Private",
+			"item": [
+				{
+					"name": "Create Payment (payin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "7967be5a-206f-4598-80eb-3959ddb555fb",
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "ae56481a-9f4a-4e49-b327-cb642b976543",
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"id": "13931884-0ab32d44-ba67-4732-bb87-fd3f0ae654a8",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"1s333ывw2s3sыs3a3ss3swвDsasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 5500,\n    \"method\": \"m2tbank\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \n    \"payer\": {\n        \"userId\": \"123srasыss3s2s3s3srswswsвsA3sSD2res1\",\n        \"senderBank\": \"tbank\"\n    }\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"payments"
+							]
+						},
+						"description": "### Create Payment\n\nThis endpoint allows you to create a new payment request.\n\n#### Request Body\n\n- `orderId` (string): The ID of the order.\n    \n- `merchantId` (string): Unique identifier of the merchant.\n    \n- `amount` (number): The amount of the payment.\n    \n- `assetOrBank` (string, optional): Bank or crypto name.\n    \n- `method` (string): The payment method.\n    \n    - `p2p` - card-number transfer, EUR/USD\n        \n    - `upi` - UPI id mail transfer, INR\n        \n    - `krw` - bank account transfer, KRW\n        \n    - `mpesa` - mobile phone-based transfer, KES\n        \n    - `ars` - CVU number transfer, ARS\n        \n    - `c2ckz` - card-number transfer, KZT\n        \n    - `c2cuz` - mix card-number transfer, UZS\n        \n    - `humo` - HUMO card-number transfer, UZS\n        \n    - `uzcard` - UZCARD card-number transfer, UZS\n        \n    - `c2caz` - card-number transfer, AZN\n        \n    - `kgs` - card-number transfer, KGS\n        \n    - `deeplink` - one click card-number transfer, KGS\n        \n    - `c2c` - card-number transfer, RUB\n        \n    - `sbp` - phone-number transfer via Russia’s Faster Payments System (RUB)\n        \n    - `c2cwt` - card-number transfer, RUB (WT)\n        \n    - `sbpwt` - phone-number transfer via Russia’s Faster Payments System (RUB) (WT)\n        \n    - `spay` - SberPay one-click QR transfer through Sberbank Online (RUB)\n        \n    - `tpay` - intrabank phone-number transfer in T-Bank (RUB)\n        \n    - `vpay` - intrabank phone-number transfer in VTB (RUB)\n        \n    - `apay` - intrabank phone-number transfer in Alfa-Bank (RUB)\n        \n    - `ozon` - intrabank phone-number transfer in OZON Bank (RUB)\n        \n    - `psb` - intrabank phone-number transfer in PSB (RUB)\n        \n    - `gazprom` - intrabank phone-number transfer in Gazprom (RUB)\n        \n    - `abh` - cross-border, RUB\n        \n    - `m2ctj` - cross-border card transfer to Tajikistan (RUB)\n        \n    - `m2ntj` - cross-border phone-number transfer to Tajikistan (RUB)\n        \n    - `m2nam` - cross-border phone-number transfer to Armenia (RUB)\n        \n    - `connectc2c` - card-number matching, RUB\n        \n    - `connectsbp` - phone-number matching via SBP, RUB\n        \n    - `nspk` - QR transfer through the Faster Payments System\n        \n    - `ecom` - classic 3-DS acquiring\n        \n    - `revo` - internal transfer, EUR\n        \n    - `paypal` - internal transfer, EUR\n        \n    - `crypto` - crypto processing (specify asset in `assetOrBank`)\n        \n- `currency` (string, optional): The currency of the payment (`RUB`, `UZS`, `KZT`, `EUR`, etc.)\n    \n- `callbackUri` (string): The URI to which the callback response will be sent.\n    \n- `successUri` (string): The URI to redirect to on successful payment.\n    \n- `failUri` (string): The URI to redirect to on failed payment.\n    \n- `payer` (object): Information about the payer.\n    \n\n#### Payer Object Example\n\n``` json\n{\n  \"payer\": {\n    \"userId\": \"u-4095\",\n    \"userIp\": \"188.11.55.10\",\n    \"customerName\": \"Иван Иванов\",\n    \"senderBank\": \"sber\", // (string, optional, conditional-required for cross‑border methods) — Identifier of the payer’s bank. Used to select FX rate tables, routing rules, and limits for cross‑border payments. Pass a lowercase slug ([a-z0-9_-], max 32 chars), e.g. \"tbank\", \"sber\", \"vtb\", \"alfa\".\n    \"type\": \"trusted\", // (string, optional) ftd/std/trusted\n    \"payments\": {\n      \"successful\": 5,\n      \"expired\": 1\n    }\n  }\n}\n\n ```"
+					},
+					"response": [
+						{
+							"id": "13931884-e383d1bb-269e-4250-b460-496c50d5bd9d",
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Signature",
+										"value": "<calculated-signature>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"orderId12\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 5500,\n    \"method\": \"c2c\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"senderBank\": \"sber\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 07 Sep 2024 12:46:42 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"pcafecfdf-b34a-4b33-897b-e081f227a472r\",\n        \"state\": \"pending\",\n        \"address\": \"11111111111\",\n        \"bank\": \"rocketbank\",\n        \"country\": \"RUB\",\n        \"recipient\": \"vasya johnson\",\n        \"rate\": \"80.58\",\n        \"amount\": \"5500.00\",\n        \"init_amount\": \"5500.00\",\n        \"bankName\": \"Рокет Банк\",\n        \"message\": null,\n        \"commission\": \"10.00\",\n        \"usdt_amount\": 61.429635145197324,\n        \"expired_at\": \"2025-11-26T19:08:11.000000Z\",\n        \"method\": \"c2c\"\n    },\n    \"url\": \"https://checkout-flow/pcafecfdf-b34a-4b33-897b-e081f227a472r\"\n}"
+						},
+						{
+							"id": "13931884-b958da72-54cd-4374-8bb0-bea42d5bd05d",
+							"name": "Invalid amount",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"or3d2e23r2Id312\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 100,\n    \"method\": \"sbp\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"senderBank\": \"sber\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 11:42:00 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": false,\n    \"error\": {\n        \"code\": 400,\n        \"message\": \"Invalid amount\",\n        \"details\": \"The amount should be between 500 and 300000.\"\n    }\n}"
+						},
+						{
+							"id": "13931884-a726dc59-3118-429a-a8ce-b8291668eeb3",
+							"name": "Merchant not found",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"or3d2e23r2Id312\",\n    \"merchantId\": \"merchantId\",\n    \"amount\": 1000,\n    \"method\": \"sbp\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"senderBank\": \"sber\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 12:17:22 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": false,\n    \"error\": {\n        \"code\": 40401,\n        \"message\": \"Merchant not found\",\n        \"details\": \"The specified merchantId does not exist or is invalid.\"\n    }\n}"
+						},
+						{
+							"id": "13931884-50606db2-436e-4f97-a7bb-658fe18734f9",
+							"name": "transgran",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"orderId12\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 5500,\n    \"method\": \"c2c\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"senderBank\": \"sber\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 12:17:22 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"66dc4b308b78c\",\n        \"state\": \"pending\",\n        \"address\": \"+992200115507\",\n        \"bank\": \"dcitybank\",\n        \"recipient\": \"Иванов Иван Иванович\",\n        \"rate\": 91.93,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Душанбе Сити Банк\",\n        \"message\": \"Выберите перевод по номеру телефона, введите скопированный номер, выберете банк Душанбе Сити Банк, введите сумму, подтвердите перевод\"\n\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
+						},
+						{
+							"id": "13931884-80f3b50d-ca4c-415b-a87f-36a3b5841e90",
+							"name": "INR UPI",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"or3d2e23r2Id312\",\n    \"merchantId\": \"merchantId\",\n    \"amount\": 1000,\n    \"method\": \"upi\",\n    \"currency\": \"RUB\",\n    \"userId\": \"123433235226\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 12:17:22 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"ae5d4e8df-1aa3-4942-b79a-5acddba8d3f0g\",\n        \"state\": \"pending\",\n        \"address\": \"8986768\",\n        \"bank\": \"indusind\",\n        \"recipient\": \"Namrata Cherian\",\n        \"rate\": 85.26,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Indusind Bank\"\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Payout Request",
+					"id": "13931884-b3e70b5a-1ad6-4e15-85fb-629fe50ff2e1",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 1200,\n    \"address\": \"1234432112344321\",\n    \"method\": \"c2c\",\n    \"currency\": \"RUB\",\n    \"recipient\": \"TEST TESTOVICH\",\n    \"assetOrBank\": \"сберыч\",\n    \"orderId\": \"test22t2e2st\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"callbackUri\": \"https://callback.xyz/callback/pay\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/payouts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"payouts"
+							]
+						},
+						"description": "Creates a payout request to transfer funds to a specified card number.\n\n**Request Body Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `amount` | number | Yes | Amount to be transferred. |\n| `address` | string | Yes | Card or Phone(SBP) number of the recipient. |\n| `method` | string | Yes | Payment method code. See [Payment Methods](#c649e516-9b4c-42d1-8920-856abb532a65). |\n| `currency` | string | No | Currency code. Default is `RUB`. |\n| `recipient` | string | Yes | Name of the recipient. |\n| `assetOrBank` | string | No | Bank of the recipient. |\n| `orderId` | string | No | Unique order ID. If not provided, a unique ID will be generated. |\n| `merchantId` | string | Yes | Unique identifier of the merchant. |\n| `callbackUri` | string | No | URI to which the callback response will be sent. |"
+					},
+					"response": [
+						{
+							"id": "13931884-7ce02085-9ea9-424e-98bb-fdbbf4bce9e5",
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer 39|0fAHOz7weBWHWR2fe5nHqWaS2f32O0K6fPTMkEx4",
+										"type": "text",
+										"disabled": true
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 1000,\n    \"address\": \"1234432112344321\",\n    \"method\": \"c2c\",\n    \"currency\": \"RUB\",\n    \"recipient\": \"TEST TESTOVICH\",\n    \"assetOrBank\": \"sber\",\n    \"orderId\": \"test22t2e2st\",\n    \"merchantId\": \"k3lhwhmxue0p650hs6doub4k\",\n    \"callbackUri\": \"https://callback.xyz/callback/fin-pay\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payouts",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payouts"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "date",
+									"value": "Wed, 06 Nov 2024 00:08:31 GMT"
+								},
+								{
+									"key": "server",
+									"value": "Apache/2.4.62 (Debian)"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.1.30"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Content-Type, Authorization, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "transfer-encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "content-type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"address\": \"1234432112344321\",\n        \"recipient\": \"TEST TESTOVICH\",\n        \"amount\": -3000,\n        \"id\": \"672ab37e402a4\",\n        \"state\": \"pending\"\n    }\n}"
+						},
+						{
+							"id": "13931884-59e6e0d1-cb7e-48a2-b489-34306c2be4d8",
+							"name": "Insufficient funds",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 1000,\n    \"address\": \"1234432112344321\",\n    \"method\": \"c2c\",\n    \"currency\": \"RUB\",\n    \"recipient\": \"TEST TESTOVICH\",\n    \"assetOrBank\": \"sber\",\n    \"orderId\": \"test22t2e2st\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"callbackUri\": \"https://callback.xyz/callback/fin-pay\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payouts",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payouts"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 13:04:28 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": false,\n    \"error\": {\n        \"code\": 40004,\n        \"message\": \"Insufficient funds\",\n        \"details\": \"The merchant does not have sufficient funds to process this payout.\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Payment Status",
+					"id": "13931884-9a8a7412-0b96-46bf-92c7-9a727ae89025",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer <token>",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"merchantId\": \"{{merchantId}}\",\n    \"paymentId\": \"a2190182a-a64c-4752-898d-836b8abe9cc6g\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"status"
+							]
+						},
+						"description": "### API Request Description\n\nThis POST request is used to retrieve the status of a payment with the provided merchant ID and payment ID. The request should include the merchant ID and payment ID in the request body.\n\n**Request Body Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `merchantId` | string | Yes | Unique identifier of the merchant. |\n| `paymentId` | string | No | The unique payment ID generated by the system. |\n| `orderId` | string | No | The original order ID provided during payment creation. |\n| `paymentIds` | array | No | An array of payment IDs to retrieve multiple statuses. |\n| `orderIds` | array | No | An array of order IDs to retrieve multiple statuses. |"
+					},
+					"response": [
+						{
+							"id": "13931884-1fb41852-2869-4fa1-a691-e59cae6ccb18",
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"merchantId\": \"ljsf1opu7eqrfoytme7rq8ol\",\n    \"paymentId\": \"66e0d7a228891\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"status"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 13:04:52 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"datetime\": 1755690497,\n    \"id\": \"a2190182a-b64c-4756-898d-836b8abe9cc6g\",\n    \"orderId\": \"02c4f5da-2000-48b9-af2e-d7a498c95f08\",\n    \"created_at\": \"2025-08-20T11:47:48.000000Z\",\n    \"expired_at\": \"2025-08-20T12:02:48.000000Z\",\n    \"status\": false,\n    \"state\": \"pending\",\n    \"type\": \"payin\",\n    \"userId\": \"19bd3fs4-c8b7-411c-8641-502d2e0b586d81\",\n    \"amount\": \"2182.00\",\n    \"media\": [],\n    \"init_amount\": \"2182.00\",\n    \"amount_commission_less\": 1941.98,\n    \"currency\": \"RUB\",\n    \"rate\": 80.79,\n    \"commission\": 11,\n    \"method\": \"c2c\"\n}"
+						},
+						{
+							"id": "13931884-ec730577-9e1b-4fa4-88ac-2e99a799fe84",
+							"name": "Success Array",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"merchantId\": \"{{merchantId}}\",\n    \"paymentIds\": [\"66e0d7a228891\"]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"status"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "date",
+									"value": "Thu, 28 Nov 2024 23:10:51 GMT"
+								},
+								{
+									"key": "server",
+									"value": "Apache/2.4.62 (Debian)"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.1.31"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Content-Type, Authorization, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "transfer-encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "content-type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "[\n    {\n        \"datetime\": 1755690497,\n        \"id\": \"a2190182a-b64c-4756-898d-836b8abe9cc6g\",\n        \"orderId\": \"02c4f5da-2000-48b9-af2e-d7a498c95f08\",\n        \"created_at\": \"2025-08-20T11:47:48.000000Z\",\n        \"expired_at\": \"2025-08-20T12:02:48.000000Z\",\n        \"status\": false,\n        \"state\": \"pending\",\n        \"type\": \"payin\",\n        \"userId\": \"19bd3fs4-c8b7-411c-8641-502d2e0b586d81\",\n        \"amount\": \"2182.00\",\n        \"media\": [],\n        \"init_amount\": \"2182.00\",\n        \"amount_commission_less\": 1941.98,\n        \"currency\": \"RUB\",\n        \"rate\": 80.79,\n        \"commission\": 11,\n        \"method\": \"c2c\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Get Rate (Commission)",
+					"id": "13931884-fdee2131-d6fc-4406-8815-7e2f794e4f1c",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/rate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"rate"
+							]
+						},
+						"description": "### Get Commissions\n\n**Query Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `method_code` | string | No | Filter by payment method code. |\n\n**Response:**\n\n**Error Responses:**\n\n- { \"status\": false, \"error\": { \"code\": 40403, \"message\": \"No payment methods found\", \"details\": \"The merchant does not have any associated payment methods.\" }}"
+					},
+					"response": [
+						{
+							"id": "13931884-b38d1618-cdb6-4954-bcd7-4a4230de0b98",
+							"name": "Get Commissions",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Signature",
+										"value": "<calculated-signature>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/rate",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"rate"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 08 Sep 2024 17:55:11 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"code\": \"c2c\",\n            \"currency\": \"RUB\",\n            \"sell\": {\n                \"commission\": 7,\n                \"rate\": 91.23,\n                \"total\": 98.23\n            },\n            \"buy\": {\n                \"commission\": -2,\n                \"rate\": 92.66,\n                \"total\": 90.66\n            }\n        },\n        {\n            \"code\": \"sbp\",\n            \"currency\": \"RUB\",\n            \"sell\": {\n                \"commission\": 7,\n                \"rate\": 91.23,\n                \"total\": 98.23\n            },\n            \"buy\": {\n                \"commission\": -2,\n                \"rate\": 92.66,\n                \"total\": 90.66\n            }\n        },\n        {\n            \"code\": \"spay\",\n            \"currency\": \"RUB\",\n            \"sell\": {\n                \"commission\": 7,\n                \"rate\": 91.23,\n                \"total\": 98.23\n            },\n            \"buy\": {\n                \"commission\": -2,\n                \"rate\": 92.66,\n                \"total\": 90.66\n            }\n        },\n        {\n            \"code\": \"a2a\",\n            \"currency\": \"RUB\",\n            \"sell\": {\n                \"commission\": 6,\n                \"rate\": 91.23,\n                \"total\": 97.23\n            },\n            \"buy\": {\n                \"commission\": -2,\n                \"rate\": 92.66,\n                \"total\": 90.66\n            }\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Asset (Bank)",
+					"id": "13931884-03be9797-1934-4273-9a3e-376415ad15d2",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/banks?currency=RUB&method_code=sbp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"banks"
+							],
+							"query": [
+								{
+									"key": "currency",
+									"value": "RUB"
+								},
+								{
+									"key": "method_code",
+									"value": "sbp"
+								}
+							]
+						},
+						"description": "Retrieves the list of banks associated with payment methods for a specific currency.\n\nAttention, it does not give the full list of available banks. Request the list from support.\n\n**Query Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `currency` | string | Yes | Currency code (e.g., `RUB`, `USD`). |\n| `method_code` | string | No | Filter by payment method code. |"
+					},
+					"response": [
+						{
+							"id": "13931884-8e43a008-202c-4a0b-8790-281a43e96f5e",
+							"name": "Get Banks for method and currency",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/banks?currency=RUB&method_code=sbp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"banks"
+									],
+									"query": [
+										{
+											"key": "currency",
+											"value": "RUB"
+										},
+										{
+											"key": "method_code",
+											"value": "sbp"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 15:03:14 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"code\": \"sbp\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        }\n    ]\n}"
+						},
+						{
+							"id": "13931884-c677d8ad-c49e-4a9f-9507-f6709353e8a1",
+							"name": "Get Banks for currency",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/banks?currency=RUB",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"banks"
+									],
+									"query": [
+										{
+											"key": "currency",
+											"value": "RUB"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 15:04:06 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"code\": \"c2c\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"sbp\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"m2c\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"c2cg\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"sbpg\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"spay\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"pc\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"st\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"a2a\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"cf\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"bz\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"pcsbp\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"stsbp\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"bzspb\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"cfspb\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"p2\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"p2sbp\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"lc\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        },\n        {\n            \"code\": \"lcspb\",\n            \"currency\": \"RUB\",\n            \"banks\": {\n                \"banks\": [\n                    {\n                        \"slug\": \"sber\",\n                        \"name\": \"Сбербанк\"\n                    },\n                    {\n                        \"slug\": \"gazprombank\",\n                        \"name\": \"Газпромбанк\"\n                    }\n                ]\n            }\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Methods",
+					"id": "13931884-93735764-6143-44a6-acf2-db98f2745ef8",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currency\":\"RUB\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/methods",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"methods"
+							]
+						}
+					},
+					"response": [
+						{
+							"id": "13931884-cf6c471b-2da9-4498-b807-a2b9d7607e83",
+							"name": "Get Methods",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/methods?currency=RUB&method_code=sbp",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"methods"
+									],
+									"query": [
+										{
+											"key": "currency",
+											"value": "RUB"
+										},
+										{
+											"key": "method_code",
+											"value": "sbp"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 12 Sep 2024 23:41:54 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"code\": \"sbp\",\n            \"currency\": \"RUB\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Balance",
+					"id": "13931884-e4017450-8896-4a14-9a66-caf0baec9dfa",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/balance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"balance"
+							]
+						}
+					},
+					"response": [
+						{
+							"id": "13931884-1c146443-0416-4763-ad2a-9a573664a26f",
+							"name": "Get Balance",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/balance",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"balance"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 18:17:48 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "X-Served-By",
+									"value": "rap1dpay.com"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"balances\": {\n        \"USDT\": 5.235386122859397,\n        \"RUB\": 0\n    },\n    \"date\": \"2024.09.11 21:17\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Fiat Balance",
+					"id": "13931884-c4b624d3-bc6d-4963-ba56-649be301dc7d",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/fiat_balance",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"fiat_balance"
+							]
+						}
+					},
+					"response": [
+						{
+							"id": "13931884-8786638f-235f-434c-9364-2b6e61f673dc",
+							"name": "Get Balance",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/fiat_balance",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"fiat_balance"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.26.2"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 24 Sep 2025 19:26:51 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "PHP/8.2.29"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Authorization, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"balances\": {\n        \"USDT\": 0.000003230336986866127,\n        \"RUB\": 30984.051908\n    },\n    \"date\": \"2025.09.24 22:26\"\n}"
+						}
+					]
+				}
+			],
+			"id": "13931884-f29f5470-7895-4e4d-a982-149ee0d48685"
+		},
+		{
+			"name": "Public",
+			"item": [
+				{
+					"name": "Set Payment Status",
+					"id": "13931884-0ce1b052-24ba-456a-94e6-29a9ebe5d7ae",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true,
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"in_check\",\n    \"utr\":\"123245\",\n    \"reason\":\"subStatus\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/orders/a67ea87133a7f5g/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"orders",
+								"a67ea87133a7f5g",
+								"status"
+							]
+						},
+						"description": "Endpoint to update the status of an order. For 'dispute' status, a file can be uploaded.\n\n**Path Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `order_id` | string | Yes | Unique identifier of the order. |\n\n**Request Body Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `status` | string | Yes | New status of the order. |\n| `file` | base64 | No | File content |\n| `utr` | string | No | RRN for acutocomplited payment (INR) |\n\n**Possible Status Values:**\n\n- `dispute`\\- апеляция (Отправка чека доступна)\n    \n- `in_check`\\- инициация проверки оплаты от пользователя \"Я оплатил\". (Отправка чека доступна)\n    \n- `canceled`\\- инициация отмены оплаты от пользователя \"Отменить платеж\". (Отправка чека не доступна)\n    \n\n**Response:**\n\n- { \"message\": \"Order status updated successfully.\"}\n    \n\n**Error Responses:**\n\n- { \"message\": \"Payment not found.\"}"
+					},
+					"response": [
+						{
+							"id": "13931884-f3167cb1-777c-40af-a133-2a51dacdb399",
+							"name": "Set Payment Status",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"in_check\",\n    \"utr\":\"123245\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g",
+										"status"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.26.2"
+								},
+								{
+									"key": "Date",
+									"value": "Fri, 16 May 2025 21:29:41 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.2.28"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-origin",
+									"value": "*"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "content-encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": {\n        \"id\": \"a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g\",\n        \"order_id\": \"a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g\",\n        \"orderId\": \"65ada1d8-5c9c-4291-8ab1-c3ec24c82989\",\n        \"external_id\": \"65ada1d8-5c9c-4291-8ab1-c3ec24c82989\",\n        \"status\": false,\n        \"state\": \"in_check\",\n        \"type\": \"payin\",\n        \"reason\": null,\n        \"amount\": \"5842.00\",\n        \"init_amount\": \"5842.00\",\n        \"userId\": \"739620040610\",\n        \"invoice\": {\n            \"address\": \"2202208438626294\",\n            \"bank\": {\n                \"code\": \"sber\",\n                \"name\": \"Сбербанк\"\n            },\n            \"message\": null,\n            \"recipient\": \"Дмитрий Игоревич К\",\n            \"method\": {\n                \"name\": \"P2P\",\n                \"logo\": {\n                    \"name\": \"image/c2c.png\",\n                    \"url\": \"https://domain.com/image/c2c.png\"\n                },\n                \"currency\": \"RUB\"\n            },\n            \"media\": [],\n            \"created_at\": \"2025-05-17T00:07:47.000000Z\",\n            \"updated_at\": \"2025-05-17T00:22:54.000000Z\"\n        },\n        \"success_uri\": null,\n        \"fail_uri\": null,\n        \"currency\": \"RUB\",\n        \"created_at\": \"2025-05-17T00:07:46.000000Z\",\n        \"updated_at\": \"2025-05-16T21:29:41.000000Z\"\n    },\n    \"status\": true,\n    \"message\": \"Payment status updated successfully.\"\n}"
+						},
+						{
+							"id": "13931884-b03b6693-0723-4569-b0b1-7259ea60b8de",
+							"name": "200 in_check utr",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"in_check\",\n    \"utr\":\"123245\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/acfc86e61-f7e3-4754-9453-484789b05fe5g/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"acfc86e61-f7e3-4754-9453-484789b05fe5g",
+										"status"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.26.2"
+								},
+								{
+									"key": "Date",
+									"value": "Fri, 16 May 2025 10:42:11 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.2.28"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-origin",
+									"value": "*"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "content-encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": {\n        \"id\": \"a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g\",\n        \"order_id\": \"a4beef6f5-9939-4c6d-be0f-18e9e24bbf13g\",\n        \"orderId\": \"65ada1d8-5c9c-4291-8ab1-c3ec24c82989\",\n        \"external_id\": \"65ada1d8-5c9c-4291-8ab1-c3ec24c82989\",\n        \"status\": false,\n        \"state\": \"in_check\",\n        \"type\": \"payin\",\n        \"reason\": null,\n        \"amount\": \"5842.00\",\n        \"init_amount\": \"5842.00\",\n        \"userId\": \"739620040610\",\n        \"invoice\": {\n            \"address\": \"2202208438626294\",\n            \"bank\": {\n                \"code\": \"sber\",\n                \"name\": \"Сбербанк\"\n            },\n            \"message\": null,\n            \"recipient\": \"Дмитрий Игоревич К\",\n            \"method\": {\n                \"name\": \"P2P\",\n                \"logo\": {\n                    \"name\": \"image/c2c.png\",\n                    \"url\": \"https://domain.com/image/c2c.png\"\n                },\n                \"currency\": \"RUB\"\n            },\n            \"media\": [],\n            \"created_at\": \"2025-05-17T00:07:47.000000Z\",\n            \"updated_at\": \"2025-05-17T00:22:54.000000Z\"\n        },\n        \"success_uri\": null,\n        \"fail_uri\": null,\n        \"currency\": \"RUB\",\n        \"created_at\": \"2025-05-17T00:07:46.000000Z\",\n        \"updated_at\": \"2025-05-16T21:29:41.000000Z\"\n    },\n    \"status\": true,\n    \"message\": \"Payment status updated successfully.\"\n}"
+						},
+						{
+							"id": "13931884-bf088ea9-72c8-46a4-9291-6b2aacdb1bec",
+							"name": "422 Unprocessable Content",
+							"originalRequest": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"finished\" //\"in_check\", \"dispute\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/a67ea87133a7f5g/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"a67ea87133a7f5g",
+										"status"
+									]
+								}
+							},
+							"status": "Unprocessable Content",
+							"code": 422,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.26.2"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 31 Mar 2025 13:08:17 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.2.28"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-origin",
+									"value": "*"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"message\": \"The selected status is invalid.\",\n    \"errors\": {\n        \"status\": [\n            \"The selected status is invalid.\"\n        ]\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Order by ID",
+					"id": "13931884-98cecb9e-efe2-4228-b0f6-0c52ac408cb5",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/orders/:order_id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"orders",
+								":order_id"
+							],
+							"variable": [
+								{
+									"id": "b689d578-9912-4542-a15f-9fdba0bfb295",
+									"key": "order_id",
+									"value": "6755c96cdfab3"
+								}
+							]
+						},
+						"description": "Получает информацию о платеже по его order_id."
+					},
+					"response": [
+						{
+							"id": "13931884-091af60f-3bea-447c-9860-e82c29ac2ac3",
+							"name": "Get Order by ID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/6755c96cdfab3",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"6755c96cdfab3"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 08 Dec 2024 16:35:15 GMT"
+								},
+								{
+									"key": "Server",
+									"value": "Apache/2.4.54 (Unix) mod_fastcgi/mod_fastcgi-SNAP-0910052141 OpenSSL/1.0.2u mod_wsgi/3.5 Python/2.7.18"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "PHP/8.2.0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "http://localhost:5173"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Authorization, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5, max=100"
+								},
+								{
+									"key": "Connection",
+									"value": "Keep-Alive"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": {\n        \"order_id\": \"6755c96cdfab3\",\n        \"status\": null,\n        \"state\": \"created\",\n        \"amount\": \"1000.00\",\n        \"terminal_user_id\": \"123qweds1ss2dsыdsss342\",\n        \"merchant\": {\n            \"id\": 42,\n            \"name\": \"TesterTester\",\n            \"code\": \"ljsf1opu7eqrfoytme7rq8ol\",\n            \"created_at\": \"2024-02-02T07:27:16.000000Z\",\n            \"updated_at\": \"2024-11-09T06:52:16.000000Z\"\n        },\n        \"callback_uri\": \"https://yourdomain.com/callback\",\n        \"success_uri\": \"https://yourdomain.com/success\",\n        \"fail_uri\": \"https://yourdomain.com/fail\",\n        \"currency\": \"RUB\",\n        \"created_at\": \"2024-12-08T16:29:32.000000Z\",\n        \"updated_at\": \"2024-12-08T16:29:32.000000Z\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Order Banks",
+					"id": "13931884-ee2cd365-eaa8-42c1-810d-2d9a823b3056",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/orders/:order_id/banks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"orders",
+								":order_id",
+								"banks"
+							],
+							"query": [
+								{
+									"key": "method_code",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "currency",
+									"value": "",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"id": "057c0c1e-257f-4ae5-beb0-b9cb3e1c8214",
+									"key": "order_id",
+									"value": "6755c96cdfab3"
+								}
+							]
+						},
+						"description": "Возвращает список доступных банков для данного платежа (order_id). Можно также использовать фильтры `method_code` и `currency`."
+					},
+					"response": [
+						{
+							"id": "13931884-7af72da5-60f5-40a2-8745-bd8c7ee60491",
+							"name": "Get Order Banks",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/:order_id/banks",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										":order_id",
+										"banks"
+									],
+									"query": [
+										{
+											"key": "method_code",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "currency",
+											"value": "",
+											"disabled": true
+										}
+									],
+									"variable": [
+										{
+											"key": "order_id",
+											"value": "6755c96cdfab3"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 08 Dec 2024 16:35:43 GMT"
+								},
+								{
+									"key": "Server",
+									"value": "Apache/2.4.54 (Unix) mod_fastcgi/mod_fastcgi-SNAP-0910052141 OpenSSL/1.0.2u mod_wsgi/3.5 Python/2.7.18"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "PHP/8.2.0"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "http://localhost:5173"
+								},
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Authorization, X-Requested-With"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "Keep-Alive",
+									"value": "timeout=5, max=100"
+								},
+								{
+									"key": "Connection",
+									"value": "Keep-Alive"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"name\": \"P2P\",\n            \"code\": \"c2c\",\n            \"type\": \"CARD\",\n            \"logo\": {\n                \"name\": \"image/c2c.png\",\n                \"url\": \"https://domain.com/image/c2c.png\"\n            },\n            \"currency\": \"RUB\",\n            \"banks\": []\n        },\n        {\n            \"name\": \"СБП\",\n            \"code\": \"sbp\",\n            \"type\": \"PHONE\",\n            \"logo\": {\n                \"name\": \"image/sbp.png\",\n                \"url\": \"https://domain.com/image/sbp.png\"\n            },\n            \"currency\": \"RUB\",\n            \"banks\": []\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Order Methods",
+					"id": "13931884-bebc823b-b99f-492b-b527-df274e68b6cd",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/orders/:order_id/methods",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"orders",
+								":order_id",
+								"methods"
+							],
+							"query": [
+								{
+									"key": "method_code",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "currency",
+									"value": "",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"id": "395977a2-ac35-4776-80da-ba0cb9cfa7dc",
+									"key": "order_id",
+									"value": "6755c96cdfab3"
+								}
+							]
+						},
+						"description": "Возвращает список доступных методов оплаты для указанного order_id. Можно фильтровать по `method_code` и `currency`."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Invoice for Selected Method",
+					"id": "13931884-8565a104-9b19-4dce-8712-98a14a46e335",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer <token>",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"method\": \"upi\" // замените на нужный метод из списка\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/orders/a71de0e7d-b38f-4c63-9116-cf0e46390bc2g/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"orders",
+								"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g",
+								"payments"
+							]
+						},
+						"description": "После выбора пользователем метода оплаты вызываем этот метод, чтобы создать инвойс для данного платежа (order_id)."
+					},
+					"response": []
+				}
+			],
+			"id": "13931884-a9ea1108-4d3d-4e29-b720-477a4f479594"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "1|aOUSKyhjIElibzAyHiDfG8Vyyu7xqypRPezJNmKo",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "f3f4dc80-6dc7-43d1-a59a-1321ebd6ce25",
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					"// Получаем тело запроса в сыром виде",
+					"let rawBody = pm.request.body.raw;",
+					"let body = pm.variables.replaceIn(rawBody);",
+					"",
+					"// Проверим, что тело запроса не пустое и является строкой",
+					"if (!body) {",
+					"    postman.setNextRequest(null); // Остановить выполнение запроса",
+					"} else if (typeof body !== 'string') {",
+					"    // Если тело запроса не является строкой, преобразуем его в строку JSON",
+					"    body = JSON.stringify(body);",
+					"}",
+					"",
+					"",
+					"// Получаем secretKey из окружения",
+					"var secretKey = pm.collectionVariables.get(\"secretKey\")",
+					"",
+					"// Проверка наличия секретного ключа",
+					"if (!secretKey) {",
+					"    postman.setNextRequest(null); // Остановить выполнение запроса, если ключ не определен",
+					"}",
+					"",
+					"// Генерируем HMAC-SHA256 подпись",
+					"try {",
+					"    const signature = CryptoJS.HmacSHA256(body, secretKey).toString(CryptoJS.enc.Hex);",
+					"    console.log(\"Signature:\", signature); // Отладочное сообщение",
+					"",
+					"    // Добавляем заголовок 'Signature'",
+					"    pm.request.headers.add({ key: 'Signature', value: signature });",
+					"} catch (error) {",
+					"    postman.setNextRequest(null); // Остановить выполнение запроса при ошибке",
+					"}",
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "15d5b3ac-aafb-4b05-88be-e90c3f779820",
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://domain"
+		},
+		{
+			"key": "merchantId",
+			"value": "lbjk0tqfpgbqeaainyuq6aye"
+		},
+		{
+			"key": "secretKey",
+			"value": "fb1235b1-6899-4d10-bcf3-61b12d90fc8e"
+		}
+	]
+}
