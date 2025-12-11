@@ -46,7 +46,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"orderId\": \"1s333ывw2s3sыs3a3ss3swвDsasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 5500,\n    \"method\": \"m2tbank\",\n    \"currency\": \"RUB\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \n    \"payer\": {\n        \"userId\": \"123srasыss3s2s3s3srswswsвsA3sSD2res1\",\n        \"senderBank\": \"tbank\"\n    }\n    \n}",
+							"raw": "{\n    \"orderId\": \"1s333ывw2s3sыs3a3sssss3swвDsasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 100,\n    \"currency\": \"AZN\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \n    \"payer\": {\n        \"userId\": \"123srasыss3s2s3s3srsswswsвsAs3sSD2res1\",\n        \"senderBank\": \"tbank\"\n    }\n    \n}",
 							"options": {
 								"raw": {
 									"language": "json"
