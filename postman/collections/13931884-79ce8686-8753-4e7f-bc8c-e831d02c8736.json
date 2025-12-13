@@ -46,7 +46,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"orderId\": \"1s333ывw2s3ssss3asssssss3swsвыыDsыasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 100,\n    \"currency\": \"AZN\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"phone\": \"37434343434\",\n        \"email\": \"email@mail.ru\",\n        \"senderBank\": \"tbank\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+							"raw": "{\n    \"orderId\": \"1s333ыв3ssss3asssssss3swsвыыDsыasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 100,\n    \"currency\": \"AZN\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-4095\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"phone\": \"37434343434\",\n        \"email\": \"email@mail.ru\",\n        \"senderBank\": \"tbank\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
