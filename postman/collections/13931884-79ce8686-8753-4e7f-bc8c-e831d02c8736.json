@@ -156,8 +156,87 @@
 							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"affea489a-d8bc-4bcd-9d78-99ae1a0fa82bg\",\n        \"state\": \"created\",\n        \"method\": \"az_ecom\"\n    },\n    \"url\": \"https://easy2tap.pro/affea489a-d8bc-4bcd-9d78-99ae1a0fa82bg\"\n}"
 						},
 						{
+							"id": "13931884-80f3b50d-ca4c-415b-a87f-36a3b5841e90",
+							"name": "INR UPI",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer <token>",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"or3d2e23r2Id312\",\n    \"merchantId\": \"merchantId\",\n    \"amount\": 1000,\n    \"method\": \"upi\",\n    \"currency\": \"RUB\",\n    \"userId\": \"123433235226\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "openresty"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 11 Sep 2024 12:17:22 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Vary",
+									"value": "Authorization"
+								},
+								{
+									"key": "Cache-Control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"ae5d4e8df-1aa3-4942-b79a-5acddba8d3f0g\",\n        \"state\": \"pending\",\n        \"address\": \"8986768\",\n        \"bank\": \"indusind\",\n        \"recipient\": \"Namrata Cherian\",\n        \"rate\": 85.26,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Indusind Bank\"\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
+						},
+						{
 							"id": "13931884-e383d1bb-269e-4250-b460-496c50d5bd9d",
-							"name": "Success",
+							"name": "RUB P2P",
 							"originalRequest": {
 								"method": "POST",
 								"header": [
@@ -479,85 +558,6 @@
 							"cookie": [],
 							"responseTime": null,
 							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"66dc4b308b78c\",\n        \"state\": \"pending\",\n        \"address\": \"+992200115507\",\n        \"bank\": \"dcitybank\",\n        \"recipient\": \"Иванов Иван Иванович\",\n        \"rate\": 91.93,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Душанбе Сити Банк\",\n        \"message\": \"Выберите перевод по номеру телефона, введите скопированный номер, выберете банк Душанбе Сити Банк, введите сумму, подтвердите перевод\"\n\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
-						},
-						{
-							"id": "13931884-80f3b50d-ca4c-415b-a87f-36a3b5841e90",
-							"name": "INR UPI",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer <token>",
-										"type": "text"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json",
-										"type": "text"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"orderId\": \"or3d2e23r2Id312\",\n    \"merchantId\": \"merchantId\",\n    \"amount\": 1000,\n    \"method\": \"upi\",\n    \"currency\": \"RUB\",\n    \"userId\": \"123433235226\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\"\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/v2/payments",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"v2",
-										"payments"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Server",
-									"value": "openresty"
-								},
-								{
-									"key": "Date",
-									"value": "Wed, 11 Sep 2024 12:17:22 GMT"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "Vary",
-									"value": "Authorization"
-								},
-								{
-									"key": "Cache-Control",
-									"value": "no-cache, private"
-								},
-								{
-									"key": "Access-Control-Allow-Origin",
-									"value": "*"
-								}
-							],
-							"cookie": [],
-							"responseTime": null,
-							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"ae5d4e8df-1aa3-4942-b79a-5acddba8d3f0g\",\n        \"state\": \"pending\",\n        \"address\": \"8986768\",\n        \"bank\": \"indusind\",\n        \"recipient\": \"Namrata Cherian\",\n        \"rate\": 85.26,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Indusind Bank\"\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
 						}
 					]
 				},
