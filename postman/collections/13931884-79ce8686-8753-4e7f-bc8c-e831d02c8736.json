@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "13931884-79ce8686-8753-4e7f-bc8c-e831d02c8736",
 		"name": "Main API Collection",
-		"description": "## Authentication\n\nAll API requests require authentication using a Bearer token in the `Authorization` header.\n\n**Headers:**\n\n- `Authorization: Bearer`\n    \n- `Content-Type: application/json`\n    \n- `Signature:`\n    \n\n## Signature Verification\n\nAll requests and responses should be signed using HMAC-SHA256 with your secret key. This ensures the integrity and authenticity of the data exchanged between your system and the API.\n\n### Generating a Signature\n\nTo generate a signature, create an HMAC-SHA256 hash of the request body using your secret key.\n\nThere is a simple piece of PHP code that shows how to generate a signature:\n\n``` php\n/** @var \\Psr\\Http\\Message\\RequestInterface $request */\n$signature = hash_hmac(\n  'sha256',\n  $request->getBody()->getContents(),\n  $secretKey\n);\n$request->withHeader('Signature', $signature);\n\n ```\n\nOr JavaScript/Node.js:\n\n``` javascript\nconst hmac = require('crypto-js/hmac-sha256');\nconst body = {\n    orderId: '123',\n    // ...\n};\nconst signature = hmac(JSON.stringify(body), 'secretKey')\n  .toString();\n// 0a059c58184f388c6fe56bc07bf0b71f941ad85175283b5257fc9490422d9f6e\n\n ```\n\nOr Python:\n\n``` python\nimport hashlib\nimport hmac\nimport json\ndef sign(data: str, secret_key: str):\n    secret_key = bytes(secret_key, \"utf8\")\n    return hmac.new(secret_key, data.encode(), hashlib.sha256).hexdigest()\ndata = {\n    'orderId': '123',\n    # ...\n}\npayload = json.dumps(data, separators=(\",\", \":\"))\nsignature = sign(payload, 'secretKey')\nprint(signature)\n# 0ff2fa58c4811407c4cd5fcb5adef76bf32c4213a579da5b17ebffb61525cb11\n\n ```\n\n## Signature Verification for Responses\n\nAlso, each response and callback contains `Signature` header signed with your secret key. It is important to verify response/callback signature in order to prevent possible security vulnerabilities.\n\nAll responses from the API include a `Signature` header, which should be verified using your secret key to ensure the response has not been tampered with.\n\n**Example in JavaScript:**\n\n``` javascript\nconst crypto = require('crypto');\nconst responseBody = JSON.stringify(response.data);\nconst signature = response.headers['Signature'];\nconst expectedSignature = crypto.createHmac('sha256', secretKey).update(responseBody).digest('hex');\nif (signature === expectedSignature) {\n  // Signature is valid\n} else {\n  // Signature is invalid\n}\n\n ```\n\n---\n\n**Example in PHP:**\n\n``` php\n/** @var \\Psr\\Http\\Message\\ResponseInterface $response */\nif($response->getHeaderLine('Signature') === hash_hmac('sha256', $response->getBody()->getContents(), $secretKey))\n{\n  // You can trust\n}\n\n ```\n\n---\n\n### Error Codes\n\nBelow is a summary of error codes that can be returned by the API:\n\n| HTTP Status | Code | Message | Details |\n| --- | --- | --- | --- |\n| 400 | 400 | Invalid amount | The amount should be between minimum and maximum allowed values. |\n| 400 | 40001 | Invalid orderId | The provided orderId is either malformed or already exists. |\n| 400 | 40002 | All requisites are busy / Invoice creation failed | Unable to create an invoice; all requisites are currently busy or url is not available. |\n| 400 | 40003 | Invalid payment method | The specified payment method is not associated with the merchant or currency mismatch. |\n| 400 | 40004 | Insufficient funds | The merchant does not have sufficient funds to process this payout. |\n| 400 | 40008 | Request is being processed | The request is currently being processed. Please wait before retrying. |\n| 401 | 401 | Unauthorized | No authorization provided and no order_id provided. |\n| 403 | 403 | Access denied | Your IP address is not in the whitelist. |\n| 403 | 40301 | User blocked | This user has been blocked from making payments. |\n| 403 | 40302 | Anti-spam protection triggered | Too many payment requests in a short period. User has been blocked. |\n| 404 | 40401 | Merchant not found / Payment not found | The specified merchantId does not exist or is invalid. / No payment found for the given orderId. |\n| 404 | 40402 | Payment method not found / No banks available | The specified payment method does not exist. / There are no banks available for the specified method or currency. |\n| 404 | 40403 | No payment methods found | The merchant does not have any associated payment methods. |\n| 404 | 40404 | Resource not found | The requested resource was not found. |\n| 409 | 40901 | Duplicate payment / Invoice already exists | Payment with this orderId already exists and has been processed. / An invoice is already associated with this payment. |\n| 422 | 422 | Unprocessable Content | The selected status is invalid. |\n| 500 | 50001 | An error occurred / Internal server error | Internal server error. |\n\n---\n\n## Callbacks\n\nWhen a payment's status changes, the system can send a callback to the `callbackUri` provided during payment creation. The callback will include a signed payload similar to the response from the \"[Get Payment Status](#9a8a7412-0b96-46bf-92c7-9a727ae89025)\" endpoint. Header has signature.\n\n**Possible state Values:**\n\n- `created` - payment created without an invoice (no method selected, user is redirected to choose a method)\n    \n- `pending`\\- **payment successfully created with the chosen method!**\n    \n- `dispute`\\- dispute/appeal\n    \n- `in_check`\\- payment verification initiated by the user or an active payout in progress.\n    \n- `finished`\\- payment successfully completed (final status).\n    \n- `canceled`\\- canceled by the user or the gateway (final status for payouts).\n    \n- `expired`\\- payment expired.\n    \n- `failed`\\- payment creation failed; no suitable requisite found (final status)\n    \n\n---\n\n---\n\n## Notes\n\n- **Error Handling:** Always check for `status: false` in the response to handle errors gracefully.\n    \n- **Rate Limiting:** Excessive requests may result in rate limiting. Ensure your application handles HTTP 429 responses.",
+		"description": "## Authentication\n\nAll API requests require authentication using a Bearer token in the `Authorization` header.\n\n**Headers:**\n\n- `Authorization: Bearer`\n    \n- `Content-Type: application/json`\n    \n- `Signature:`\n    \n\n## Signature Verification\n\nAll requests and responses should be signed using HMAC-SHA256 with your secret key. This ensures the integrity and authenticity of the data exchanged between your system and the API.\n\n### Generating a Signature\n\nTo generate a signature, create an HMAC-SHA256 hash of the request body using your secret key.\n\nThere is a simple piece of PHP code that shows how to generate a signature:\n\n``` php\n/** @var \\Psr\\Http\\Message\\RequestInterface $request */\n$signature = hash_hmac(\n  'sha256',\n  $request->getBody()->getContents(),\n  $secretKey\n);\n$request->withHeader('Signature', $signature);\n\n ```\n\nOr JavaScript/Node.js:\n\n``` javascript\nconst hmac = require('crypto-js/hmac-sha256');\nconst body = {\n    orderId: '123',\n    // ...\n};\nconst signature = hmac(JSON.stringify(body), 'secretKey')\n  .toString();\n// 0a059c58184f388c6fe56bc07bf0b71f941ad85175283b5257fc9490422d9f6e\n\n ```\n\nOr Python:\n\n``` python\nimport hashlib\nimport hmac\nimport json\n\ndef _signature(data: dict, secret: str) -> str:\n    # IMPORTANT: use separators to remove spaces after : and ,\n    string = json.dumps(data, separators=(\",\", \":\"))\n    secret_key = bytes(secret, \"utf8\")\n    return hmac.new(secret_key, string.encode(), hashlib.sha256).hexdigest()\n\ndef _gen_headers(payload: dict, api_key: str, secret: str) -> tuple:\n    sign = _signature(payload, secret)\n    headers = {\n        \"Signature\": sign,\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": f\"Bearer {api_key}\"\n    }\n    return headers, payload\n\n# Example usage:\ndata = {\n    'orderId': '123',\n    'merchantId': 'your_merchant_id',\n    'amount': 1000\n}\nheaders, payload = _gen_headers(data, 'your_api_key', 'your_secret_key')\nprint(headers['Signature'])\n# 0ff2fa58c4811407c4cd5fcb5adef76bf32c4213a579da5b17ebffb61525cb11\n\n ```\n\n## Signature Verification for Callbacks\n\nEach callback contains a `Signature` header signed with your secret key. It is important to verify callback signature in order to prevent possible security vulnerabilities.\n\n**Example in JavaScript (verifying callback):**\n\n``` javascript\nconst crypto = require('crypto');\n// callbackBody - raw body string received from callback request\nconst signature = callbackHeaders['Signature'];\nconst expectedSignature = crypto.createHmac('sha256', secretKey).update(callbackBody).digest('hex');\nif (signature === expectedSignature) {\n  // Signature is valid - process the callback\n} else {\n  // Signature is invalid - reject the callback\n}\n\n ```\n\n---\n\n**Example in PHP (verifying callback):**\n\n``` php\n$callbackBody = file_get_contents('php://input');\n$signature = $_SERVER['HTTP_SIGNATURE'] ?? '';\nif($signature === hash_hmac('sha256', $callbackBody, $secretKey))\n{\n  // Signature is valid - you can trust this callback\n}\n\n ```\n\n---\n\n### Error Codes\n\nBelow is a summary of error codes that can be returned by the API:\n\n| HTTP Status | Code | Message | Details |\n| --- | --- | --- | --- |\n| 400 | 400 | Invalid amount | The amount should be between minimum and maximum allowed values. |\n| 400 | 40001 | Invalid orderId | The provided orderId is either malformed or already exists. |\n| 400 | 40002 | All requisites are busy / Invoice creation failed | Unable to create an invoice; all requisites are currently busy or url is not available. |\n| 400 | 40003 | Invalid payment method | The specified payment method is not associated with the merchant or currency mismatch. |\n| 400 | 40004 | Insufficient funds | The merchant does not have sufficient funds to process this payout. |\n| 400 | 40008 | Request is being processed | The request is currently being processed. Please wait before retrying. |\n| 401 | 401 | Unauthorized | No authorization provided and no order_id provided. |\n| 403 | 403 | Access denied | Your IP address is not in the whitelist. |\n| 403 | 40301 | User blocked | This user has been blocked from making payments. |\n| 403 | 40302 | Anti-spam protection triggered | Too many payment requests in a short period. User has been blocked. |\n| 404 | 40401 | Merchant not found / Payment not found | The specified merchantId does not exist or is invalid. / No payment found for the given orderId. |\n| 404 | 40402 | Payment method not found / No banks available | The specified payment method does not exist. / There are no banks available for the specified method or currency. |\n| 404 | 40403 | No payment methods found | The merchant does not have any associated payment methods. |\n| 404 | 40404 | Resource not found | The requested resource was not found. |\n| 409 | 40901 | Duplicate payment / Invoice already exists | Payment with this orderId already exists and has been processed. / An invoice is already associated with this payment. |\n| 422 | 422 | Unprocessable Content | The selected status is invalid. |\n| 500 | 50001 | An error occurred / Internal server error | Internal server error. |\n\n---\n\n## Callbacks\n\nWhen a payment's status changes, the system can send a callback to the `callbackUri` provided during payment creation. The callback will include a signed payload similar to the response from the \"[Get Payment Status](#9a8a7412-0b96-46bf-92c7-9a727ae89025)\" endpoint. Header has signature.\n\n**Possible state Values:**\n\n- `created` - payment created without an invoice (no method selected, user is redirected to choose a method)\n    \n- `pending`\\- **payment successfully created with the chosen method!**\n    \n- `dispute`\\- dispute/appeal\n    \n- `in_check`\\- payment verification initiated by the user or an active payout in progress.\n    \n- `finished`\\- payment successfully completed (final status).\n    \n- `canceled`\\- canceled by the user or the gateway (final status for payouts).\n    \n- `expired`\\- payment expired.\n    \n- `failed`\\- payment creation failed; no suitable requisite found (final status)\n    \n\n---\n\n---\n\n## Notes\n\n- **Error Handling:** Always check for `status: false` in the response to handle errors gracefully.\n    \n- **Rate Limiting:** Excessive requests may result in rate limiting. Ensure your application handles HTTP 429 responses.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -2285,7 +2285,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"method\": \"upi\" // замените на нужный метод из списка\n}",
+							"raw": "{\n    \"method\": \"ecom\",\n    \"card\": {\n        \"number\": \"4111111111111111\",\n        \"cvv\": \"123\",\n        \"expiry\": \"12/25\",\n        \"holder\": \"JOHN DOE\"\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2305,9 +2305,121 @@
 								"payments"
 							]
 						},
-						"description": "После выбора пользователем метода оплаты вызываем этот метод, чтобы создать инвойс для данного платежа (order_id)."
+						"description": "Creates an invoice for the payment after the user selects a payment method.\n\n**Path Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `order_id` | string | Yes | Payment identifier returned from Create Payment. |\n\n**Request Body Parameters:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `method` | string | Yes | Payment method code (e.g., `ecom`, `c2c`, `sbp`). |\n| `include_commission` | boolean | No | If true, commission will be added to the payment amount. |\n\n**Card Data (H2H Flow):**\n\nFor methods that require card data (e.g., `ecom`), you can pass card details directly. This is used for Host-to-Host integrations where card data is collected on your side.\n\n**Option 1 - Flat structure:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `card_number` | string | Yes* | Card number (13-19 digits). |\n| `cvv` | string | Yes* | CVV/CVC code (3-4 digits). |\n| `expiry_date` | string | Yes* | Expiration date in MM/YY or MMYY format. |\n| `holder` | string | No | Cardholder name. |\n\n**Option 2 - Nested `card` object:**\n\n| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n| `card.number` | string | Yes* | Card number (13-19 digits). |\n| `card.cvv` | string | Yes* | CVV/CVC code (3-4 digits). |\n| `card.expiry` | string | Yes* | Expiration date in MM/YY or MMYY format. |\n| `card.holder` | string | No | Cardholder name. |\n\n*Required only for H2H card payment methods.\n\n**Example with card data:**\n\n```json\n{\n    \"method\": \"ecom\",\n    \"card\": {\n        \"number\": \"4111111111111111\",\n        \"cvv\": \"123\",\n        \"expiry\": \"12/25\",\n        \"holder\": \"JOHN DOE\"\n    }\n}\n```\n\n**Response:**\n\nReturns payment details with invoice information including address, bank, rate, etc."
 					},
-					"response": []
+					"response": [
+						{
+							"id": "13931884-create-invoice-success",
+							"name": "Success (P2P method)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"method\": \"c2c\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/a71de0e7d-b38f-4c63-9116-cf0e46390bc2g/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g\",\n        \"state\": \"pending\",\n        \"address\": \"2202208438626294\",\n        \"bank\": \"sber\",\n        \"recipient\": \"Иван Иванович И\",\n        \"rate\": 92.50,\n        \"amount\": \"5000.00\",\n        \"init_amount\": \"5000.00\",\n        \"bankName\": \"Сбербанк\",\n        \"commission\": 7,\n        \"method\": \"c2c\"\n    },\n    \"url\": \"https://checkout.example.com/a71de0e7d-b38f-4c63-9116-cf0e46390bc2g\"\n}"
+						},
+						{
+							"id": "13931884-create-invoice-ecom",
+							"name": "Success (ECOM with card data)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"method\": \"ecom\",\n    \"card\": {\n        \"number\": \"4111111111111111\",\n        \"cvv\": \"123\",\n        \"expiry\": \"12/25\",\n        \"holder\": \"JOHN DOE\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/a71de0e7d-b38f-4c63-9116-cf0e46390bc2g/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g\",\n        \"state\": \"pending\",\n        \"rate\": 92.50,\n        \"amount\": \"5000.00\",\n        \"init_amount\": \"5000.00\",\n        \"commission\": 5,\n        \"method\": \"ecom\"\n    },\n    \"url\": \"https://3ds-acs.example.com/verify?id=abc123\"\n}"
+						},
+						{
+							"id": "13931884-create-invoice-exists",
+							"name": "Invoice already exists",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"method\": \"c2c\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/orders/a71de0e7d-b38f-4c63-9116-cf0e46390bc2g/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"orders",
+										"a71de0e7d-b38f-4c63-9116-cf0e46390bc2g",
+										"payments"
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": false,\n    \"error\": {\n        \"code\": 40901,\n        \"message\": \"Invoice already exists\",\n        \"details\": \"An invoice is already associated with this payment.\"\n    }\n}"
+						}
+					]
 				}
 			],
 			"id": "13931884-a9ea1108-4d3d-4e29-b720-477a4f479594"
