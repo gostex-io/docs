@@ -46,7 +46,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"orderId\": \"1s333ыв3ssss3asыesssssssыss3swsssвыыDsыasd23e1\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 13420,\n    \"currency\": \"AZN\",\n    \"method\": \"azn\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-40s95\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"phone\": \"37434343434\",\n        \"email\": \"email@mail.ru\",\n        \"senderBank\": \"tbank\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+							"raw": "{\n    \"orderId\": \"testorderid1a\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 13420,\n    \"currency\": \"AZN\",\n    \"method\": \"az_ecom\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-40s95\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"phone\": \"37434343434\",\n        \"email\": \"email@mail.ru\",\n        \"senderBank\": \"tbank\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -470,6 +470,94 @@
 							"cookie": [],
 							"responseTime": null,
 							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"ae5d4e8df-1aa3-4942-b79a-5acddba8d3f0g\",\n        \"state\": \"pending\",\n        \"address\": \"8986768\",\n        \"bank\": \"indusind\",\n        \"recipient\": \"Namrata Cherian\",\n        \"rate\": 85.26,\n        \"amount\": 1000.00,\n        \"init_amount\": 1000.00,\n        \"bankName\": \"Indusind Bank\"\n    },\n    \"url\": \"https://checkout.com/66dc4b308b78c\"\n}"
+						},
+						{
+							"id": "13931884-2350bb3e-e9ea-4745-8a81-39ebd8307cf8",
+							"name": "Create Payment (payin)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"orderId\": \"testorderid1a\",\n    \"merchantId\": \"{{merchantId}}\",\n    \"amount\": 13420,\n    \"currency\": \"AZN\",\n    \"method\": \"az_ecom\",\n    \"callbackUri\": \"https://yourdomain.com/callback\",\n    \"successUri\": \"https://yourdomain.com/success\",\n    \"failUri\": \"https://yourdomain.com/fail\",\n    \"payer\": {\n        \"userId\": \"u-40s95\",\n        \"userIp\": \"188.11.55.10\",\n        \"customerName\": \"Иван Иванов\",\n        \"phone\": \"37434343434\",\n        \"email\": \"email@mail.ru\",\n        \"senderBank\": \"tbank\",\n        \"type\": \"trusted\",\n        \"payments\": {\n            \"successful\": 5,\n            \"expired\": 1\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v2/payments",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v2",
+										"payments"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.26.2"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Dec 2025 04:29:17 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "x-powered-by",
+									"value": "PHP/8.2.28"
+								},
+								{
+									"key": "cache-control",
+									"value": "no-cache, private"
+								},
+								{
+									"key": "access-control-allow-origin",
+									"value": "*"
+								},
+								{
+									"key": "access-control-allow-methods",
+									"value": "GET, POST, OPTIONS, DELETE, PUT, PATCH"
+								},
+								{
+									"key": "access-control-allow-headers",
+									"value": "Authorization, Content-Type, Accept, Origin, X-Requested-With"
+								},
+								{
+									"key": "access-control-allow-credentials",
+									"value": "true"
+								},
+								{
+									"key": "content-encoding",
+									"value": "gzip"
+								}
+							],
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"status\": true,\n    \"result\": {\n        \"id\": \"affea489a-d8bc-4bcd-9d78-99ae1a0fa82bg\",\n        \"state\": \"created\",\n        \"method\": \"az_ecom\"\n    },\n    \"url\": \"https://easy2tap.pro/affea489a-d8bc-4bcd-9d78-99ae1a0fa82bg\"\n}"
 						}
 					]
 				},
